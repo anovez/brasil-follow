@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg-primary: #0a0b1a;
+  --color-bg-secondary: #111236;
+  --color-bg-card: rgba(17, 18, 54, 0.6);
+  --color-accent-primary: #6c5ce7;
+  --color-accent-secondary: #a855f7;
+  --color-accent-success: #10b981;
+  --color-accent-warning: #f59e0b;
+  --color-accent-danger: #ef4444;
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #64748b;
+  --color-glass-bg: rgba(255, 255, 255, 0.05);
+  --color-glass-border: rgba(255, 255, 255, 0.1);
+}
+
+body {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+/* Glass card effect */
+.glass-card {
+  background: var(--color-glass-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--color-glass-border);
+  border-radius: 1rem;
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #6c5ce7, #a855f7, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-accent-primary);
+  border-radius: 3px;
+}
+
+/* Animated gradient border */
+.gradient-border {
+  position: relative;
+}
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, #6c5ce7, #a855f7, #ec4899);
+  z-index: -1;
+  opacity: 0.5;
+}
+
+/* Social proof scroll animation */
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+.animate-scroll {
+  animation: scroll 25s linear infinite;
+}

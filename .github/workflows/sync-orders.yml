@@ -1,0 +1,21 @@
+name: Sync Orders
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync active orders
+        run: |
+          curl -s -X POST "${{ secrets.APP_URL }}/api/cron/sync-orders" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json"
+
+      - name: Check pending payments
+        run: |
+          curl -s -X POST "${{ secrets.APP_URL }}/api/cron/check-payments" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json"

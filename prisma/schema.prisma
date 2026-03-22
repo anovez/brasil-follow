@@ -1,0 +1,194 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique @db.VarChar(191)
+  username      String   @unique @db.VarChar(191)
+  password      String?  @db.VarChar(255)
+  name          String   @db.VarChar(255)
+  image         String?  @db.VarChar(500)
+  googleId      String?  @unique @db.VarChar(191)
+  role          String   @default("USER") @db.VarChar(20)
+  balance       Decimal  @default(0) @db.Decimal(10, 2)
+  affiliateCode String   @unique @db.VarChar(191)
+  referredById  Int?
+  referredBy    User?    @relation("Referrals", fields: [referredById], references: [id])
+  referrals     User[]   @relation("Referrals")
+  apiKey        String   @unique @db.VarChar(191)
+  status        String   @default("ACTIVE") @db.VarChar(20)
+  level         String   @default("BRONZE") @db.VarChar(20)
+  totalSpent    Decimal  @default(0) @db.Decimal(10, 2)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  orders           Order[]
+  payments         Payment[]
+  affiliateEarnings AffiliateEarning[] @relation("AffiliateEarnings")
+  referredEarnings  AffiliateEarning[] @relation("ReferredEarnings")
+  tickets          Ticket[]
+  ticketMessages   TicketMessage[]
+  balanceLogs      BalanceLog[]
+  securityLogs     SecurityLog[]
+}
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(191)
+  slug      String   @unique @db.VarChar(191)
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  services  Service[]
+}
+
+model Service {
+  id                Int      @id @default(autoincrement())
+  categoryId        Int
+  category          Category @relation(fields: [categoryId], references: [id])
+  name              String   @db.VarChar(500)
+  description       String?  @db.Text
+  pricePerThousand  Decimal  @db.Decimal(10, 4)
+  costPerThousand   Decimal  @db.Decimal(10, 4)
+  minQuantity       Int
+  maxQuantity       Int
+  providerServiceId String   @db.VarChar(191)
+  providerId        Int
+  provider          Provider @relation(fields: [providerId], references: [id])
+  type              String   @default("DEFAULT") @db.VarChar(20)
+  averageTime       String?  @db.VarChar(100)
+  quality           String   @default("media") @db.VarChar(20)
+  dripfeed          Boolean  @default(false)
+  refill            Boolean  @default(false)
+  refillDays        Int      @default(0)
+  isActive          Boolean  @default(true)
+  sortOrder         Int      @default(0)
+  createdAt         DateTime @default(now())
+  orders            Order[]
+}
+
+model Provider {
+  id            Int      @id @default(autoincrement())
+  name          String   @db.VarChar(191)
+  apiUrl        String   @db.VarChar(500)
+  apiKey        String   @db.Text
+  balance       Decimal  @default(0) @db.Decimal(10, 2)
+  defaultMarkup Decimal  @default(30) @db.Decimal(5, 2)
+  currency      String   @default("BRL") @db.VarChar(10)
+  exchangeRate  Decimal  @default(1) @db.Decimal(10, 4)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  services      Service[]
+}
+
+model Order {
+  id              Int      @id @default(autoincrement())
+  externalId      String   @default(cuid()) @db.VarChar(191)
+  userId          Int
+  user            User     @relation(fields: [userId], references: [id])
+  serviceId       Int
+  service         Service  @relation(fields: [serviceId], references: [id])
+  link            String   @db.VarChar(500)
+  quantity        Int
+  amount          Decimal  @db.Decimal(10, 2)
+  cost            Decimal  @db.Decimal(10, 2)
+  profit          Decimal  @db.Decimal(10, 2)
+  status          String   @default("PENDING") @db.VarChar(30)
+  providerOrderId String?  @db.VarChar(191)
+  startCount      Int?
+  remains         Int?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  affiliateEarnings AffiliateEarning[]
+}
+
+model Payment {
+  id            Int       @id @default(autoincrement())
+  userId        Int
+  user          User      @relation(fields: [userId], references: [id])
+  amount        Decimal   @db.Decimal(10, 2)
+  method        String    @default("PIX") @db.VarChar(20)
+  status        String    @default("PENDING") @db.VarChar(20)
+  efiTxId       String?   @db.VarChar(191)
+  efiE2eId      String?   @db.VarChar(191)
+  pixCopiaECola String?   @db.Text
+  qrCodeBase64  String?   @db.LongText
+  expiresAt     DateTime?
+  paidAt        DateTime?
+  createdAt     DateTime  @default(now())
+}
+
+model AffiliateEarning {
+  id             Int      @id @default(autoincrement())
+  affiliateId    Int
+  affiliate      User     @relation("AffiliateEarnings", fields: [affiliateId], references: [id])
+  referredUserId Int
+  referredUser   User     @relation("ReferredEarnings", fields: [referredUserId], references: [id])
+  orderId        Int?
+  order          Order?   @relation(fields: [orderId], references: [id])
+  amount         Decimal  @db.Decimal(10, 2)
+  percentage     Decimal  @db.Decimal(5, 2)
+  status         String   @default("PENDING") @db.VarChar(20)
+  createdAt      DateTime @default(now())
+}
+
+model Ticket {
+  id        Int             @id @default(autoincrement())
+  userId    Int
+  user      User            @relation(fields: [userId], references: [id])
+  subject   String          @db.VarChar(255)
+  status    String          @default("OPEN") @db.VarChar(20)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  messages  TicketMessage[]
+}
+
+model TicketMessage {
+  id        Int      @id @default(autoincrement())
+  ticketId  Int
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  message   String   @db.Text
+  isAdmin   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Setting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique @db.VarChar(191)
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+}
+
+model BalanceLog {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id])
+  amount       Decimal  @db.Decimal(10, 2)
+  balanceAfter Decimal  @db.Decimal(10, 2)
+  type         String   @db.VarChar(30)
+  description  String   @db.Text
+  adminId      Int?
+  createdAt    DateTime @default(now())
+}
+
+model SecurityLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String   @db.VarChar(100)
+  ip        String   @db.VarChar(45)
+  userAgent String?  @db.Text
+  details   String?  @db.Text
+  severity  String   @default("INFO") @db.VarChar(20)
+  createdAt DateTime @default(now())
+}
