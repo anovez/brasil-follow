@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { getToken } from "next-auth/jwt"
+import { jwtVerify } from "jose"
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
@@ -14,12 +14,6 @@ export async function middleware(req: NextRequest) {
 
   if (isPublicRoute) return NextResponse.next()
 
-  if (
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/images") ||
-    pathname.startsWith("/favicon")
-  ) return NextResponse.next()
-
   if (pathname.startsWith("/api/cron")) {
     const authHeader = req.headers.get("authorization")
     const cronSecret = process.env.CRON_SECRET
@@ -29,7 +23,11 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
+  const cookieName = process.env.NEXTAUTH_URL?.startsWith("https")
+    ? "__Secure-next-auth.session-token"
+    : "next-auth.session-token"
+
+  const token = req.cookies.get(cookieName)?.value
 
   if (!token) {
     const loginUrl = new URL("/login", req.url)
@@ -37,14 +35,23 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  if (token.status === "BANNED") {
-    return NextResponse.redirect(new URL("/login?error=banned", req.url))
-  }
+  try {
+    const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET!)
+    const { payload } = await jwtVerify(token, secret)
 
-  if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
-    if (token.role !== "ADMIN") {
-      return NextResponse.redirect(new URL("/", req.url))
+    if (payload.status === "BANNED") {
+      return NextResponse.redirect(new URL("/login?error=banned", req.url))
     }
+
+    if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
+      if (payload.role !== "ADMIN") {
+        return NextResponse.redirect(new URL("/", req.url))
+      }
+    }
+  } catch {
+    const loginUrl = new URL("/login", req.url)
+    loginUrl.searchParams.set("callbackUrl", pathname)
+    return NextResponse.redirect(loginUrl)
   }
 
   return NextResponse.next()
