@@ -23,6 +23,8 @@ function generateApiKey(): string {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  trustHost: true,
+
   providers: [
     Credentials({
       name: "credentials",
@@ -168,9 +170,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         } else {
           let referredById: number | null = null
 
-          // Check for referral cookie - handled via the cookies in the request
-          // The referral code would be stored in a cookie named "ref"
-          // This is typically set when the user visits a referral link
           if (typeof globalThis !== "undefined") {
             try {
               const { cookies } = await import("next/headers")
@@ -241,7 +240,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user, account, trigger }) {
       if (user) {
         token.userId = Number(user.id)
-        // Fetch full user data from DB on initial login
         const dbUser = await prisma.user.findUnique({
           where: { id: Number(user.id) },
           select: { role: true, status: true, level: true },
