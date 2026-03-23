@@ -4,6 +4,10 @@ const nextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
 
+  experimental: {
+    middlewarePrefetch: "strict",
+  },
+
   async headers() {
     return [
       {
