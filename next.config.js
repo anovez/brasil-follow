@@ -1,12 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: "standalone",
   compress: true,
   poweredByHeader: false,
   reactStrictMode: true,
-
-  experimental: {
-    middlewarePrefetch: "strict",
-  },
 
   async headers() {
     return [
